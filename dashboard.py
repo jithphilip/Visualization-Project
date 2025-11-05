@@ -505,7 +505,7 @@ def get_summary_stats(df_subset):
 # ----------------------------------------------------------
 # 📊 Tabs for analysis and itinerary planning
 # ----------------------------------------------------------
-tab1, tab2, tab3 = st.tabs(["Univariate Analysis", "Bivariate Analysis", "Itinerary Planner"])
+tab1, tab2, tab3, tab4 = st.tabs(["Univariate Analysis", "Bivariate Analysis", "Itinerary Planner", "Route Finder"])
 
 # ----------------------------------------------------------
 # 🟢 TAB 1: Univariate analysis
@@ -637,6 +637,69 @@ with tab3:
                 st.info("No matching itinerary found for the selected destinations.")
 
 
+# ----------------------------------------------------------
+# Tab 4:🧭 Route Finder Tab
+# ----------------------------------------------------------
+with tab4:
+    st.header("🧭 Find Routes Based on Your Preferences")
+
+    # Create a working copy of df
+    route_df = df.copy()
+
+    # --- Budget filter ---
+    if "Total_Cost" in route_df.columns:
+        min_cost, max_cost = int(route_df["Total_Cost"].min()), int(route_df["Total_Cost"].max())
+        budget = st.slider("💰 Select your total budget range (₹)", 
+                           min_value=min_cost, max_value=max_cost, value=(min_cost, max_cost))
+        route_df = route_df[(route_df["Total_Cost"] >= budget[0]) & (route_df["Total_Cost"] <= budget[1])]
+    else:
+        st.warning("⚠️ 'Total_Cost' column not found in dataset.")
+
+    st.markdown("### Optional Filters")
+
+    # --- Optional categorical filters ---
+    cat_filters = {
+        "Crowd_Density": None,
+        "Traffic_Level": None,
+        "Event_Impact": None,
+        "Weather": None,
+        "Travel_Companions": None,
+        "Preferred_Theme": None,
+        "Preferred_Transport": None
+    }
+
+    # Generate filter widgets dynamically
+    cols = st.columns(2)
+    for i, col in enumerate(cat_filters.keys()):
+        with cols[i % 2]:
+            if col in route_df.columns:
+                opts = sorted(route_df[col].dropna().unique().tolist())
+                selected = st.multiselect(f"Select {col}", opts)
+                if selected:
+                    route_df = route_df[route_df[col].isin(selected)]
+                    cat_filters[col] = selected
+
+    # --- Show results ---
+    st.write("---")
+    st.subheader("🔍 Matching Routes")
+
+    if len(route_df) == 0:
+        st.info("No routes found for the selected filters. Try widening your budget or removing some filters.")
+    else:
+        # Sort routes by Total_Cost ascending
+        route_df = route_df.sort_values(by="Total_Cost", ascending=True)
+        st.dataframe(route_df[["sequence", "Total_Cost", "Optimal_Route_Preference"] + 
+                               [c for c in cat_filters.keys() if c in route_df.columns]].reset_index(drop=True))
+
+        # Optional route summary
+        st.markdown(f"**{len(route_df)} routes found matching your preferences.**")
+        avg_cost = route_df["Total_Cost"].mean() if "Total_Cost" in route_df.columns else None
+        if avg_cost:
+            st.metric("Average Cost of Matching Routes", f"₹{avg_cost:.0f}")
+
+        # # Download filtered routes
+        # csv = route_df.to_csv(index=False).encode("utf-8")
+        # st.download_button("⬇️ Download Matching Routes", csv, "filtered_routes.csv", "text/csv")
 
 
 
