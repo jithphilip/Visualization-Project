@@ -189,7 +189,7 @@ def aggregate_metrics(df_subset):
     metrics = {}
 
     # Numeric columns (mean)
-    for col in ['avg_cost', 'duration']:
+    for col in ['Total_Cost', 'Total_Duration']:
         if col in df_subset.columns:
             try:
                 metrics[col] = round(df_subset[col].astype(float).mean(), 2)
@@ -197,7 +197,7 @@ def aggregate_metrics(df_subset):
                 metrics[col] = None
 
     # Categorical columns (mode)
-    for col in ['crowd_density', 'traffic_level', 'festival_impact']:
+    for col in ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather']:
         if col in df_subset.columns:
             try:
                 metrics[col] = mode(df_subset[col].dropna())
@@ -289,13 +289,15 @@ with left:
         if not sel.empty:
             metrics = aggregate_metrics(sel)
 
+            'Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather'
             # ---- Metric cards ----
-            c1, c2, c3, c4, c5 = st.columns(5)
-            c1.metric('Crowd (mode)', metrics.get('Crowd_Intensity', 'N/A'))
-            c2.metric('Traffic (mode)', metrics.get('Traffic_Level', 'N/A'))
-            c3.metric('Festival impact (mode)', metrics.get('Festival_Impact', 'N/A'))
-            c4.metric('Avg cost', f"₹{metrics.get('Total_Cost', 'N/A')}")
-            c5.metric('Avg duration (hrs)', metrics.get('Total_Duration', 'N/A'))
+            c1, c2, c3, c4, c5, C6 = st.columns(6)
+            c1.metric('Crowd (Most Frequent)', metrics.get('Crowd_Density', 'N/A'))
+            c2.metric('Traffic (Most Frequent)', metrics.get('Traffic_Level', 'N/A'))
+            c3.metric('Festival impact (Most Frequent)', metrics.get('Event_Impact', 'N/A'))
+            c3.metric('Weather (Most Frequent)', metrics.get('Weather', 'N/A'))
+            c5.metric('Avg cost', f"₹{metrics.get('Total_Cost', 'N/A')}")
+            c6.metric('Avg duration (hrs)', metrics.get('Total_Duration', 'N/A'))
         
             st.markdown('---')
             st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -306,7 +308,7 @@ with left:
 
             # ---- Route recommendation ----
             st.subheader('Corresponding Optimised Route Preference')
-            if 'optimised_route_preference' in sel.columns:
+            if 'Optimal_Route_Preference' in sel.columns:
                 vals = sel['Optimal_Route_Preference'].dropna().unique().tolist()
                 if vals:
                     for i, v in enumerate(vals, 1):
@@ -322,17 +324,17 @@ with left:
 
             
 
-            # ---------------- Route Recommendation ----------------
-            st.subheader('Corresponding Optimised Route Preference')
-            orp_vals = agg.get('optimised_route_preference_vals', [])
-            if orp_vals:
-                st.write('Values from matching rows (preserving dataset order):')
-                for i, v in enumerate(orp_vals, 1):
-                    st.write(f"{i}. {v}")
-                if agg.get('optimised_route_preference_numeric_mode') is not None:
-                    st.write(f"Numeric mode of optimised_route_preference: {agg['optimised_route_preference_numeric_mode']}")
-            else:
-                st.info("No 'optimised_route_preference' values found in the matching dataset rows.")
+            # # ---------------- Route Recommendation ----------------
+            # st.subheader('Corresponding Optimised Route Preference')
+            # orp_vals = agg.get('optimised_route_preference_vals', [])
+            # if orp_vals:
+            #     st.write('Values from matching rows (preserving dataset order):')
+            #     for i, v in enumerate(orp_vals, 1):
+            #         st.write(f"{i}. {v}")
+            #     if agg.get('optimised_route_preference_numeric_mode') is not None:
+            #         st.write(f"Numeric mode of optimised_route_preference: {agg['optimised_route_preference_numeric_mode']}")
+            # else:
+            #     st.info("No 'optimised_route_preference' values found in the matching dataset rows.")
 
 # ---------------- Right panel for filtering ----------------
 with right:
@@ -425,6 +427,7 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
 st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
+
 
 
 
