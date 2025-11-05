@@ -138,46 +138,74 @@ def next_options_from_matching(df, itinerary):
     return sorted(list(dict.fromkeys([c for c in candidates if c])))
 
 
-def aggregate_metrics_from_rows(rows):
-    """Given a DataFrame `rows` (matching sequences), compute the aggregated metrics required by the UI.
+# def aggregate_metrics_from_rows(rows):
+#     """Given a DataFrame `rows` (matching sequences), compute the aggregated metrics required by the UI.
 
-    Returns a dict with keys: crowd_density, traffic_level, festival_impact, avg_cost, duration, optimised_route_preference_vals
-    - Numeric fields are averaged (mean) when multiple rows exist.
-    - optimised_route_preference_vals: returns unique list of values from matching rows (preserves order of appearance).
-    - If a field doesn't exist, value will be None.
-    """
-    out = {}
-    numeric_cols = ['crowd_density', 'traffic_level', 'festival_impact', 'avg_cost', 'duration']
-    for col in numeric_cols:
-        if col in rows.columns:
+#     Returns a dict with keys: crowd_density, traffic_level, festival_impact, avg_cost, duration, optimised_route_preference_vals
+#     - Numeric fields are averaged (mean) when multiple rows exist.
+#     - optimised_route_preference_vals: returns unique list of values from matching rows (preserves order of appearance).
+#     - If a field doesn't exist, value will be None.
+#     """
+#     out = {}
+#     numeric_cols = ['crowd_density', 'traffic_level', 'festival_impact', 'avg_cost', 'duration']
+#     for col in numeric_cols:
+#         if col in rows.columns:
+#             try:
+#                 out[col] = float(rows[col].dropna().astype(float).mean())
+#             except Exception:
+#                 out[col] = None
+#         else:
+#             out[col] = None
+
+#     # optimised route preference values: collect and dedupe preserving order
+#     if 'optimised_route_preference' in rows.columns:
+#         vals = rows['optimised_route_preference'].dropna().tolist()
+#         # convert to strings for display
+#         seen = []
+#         for v in vals:
+#             sv = str(v)
+#             if sv not in seen:
+#                 seen.append(sv)
+#         out['optimised_route_preference_vals'] = seen
+#         # if numeric, give a mode/median as helpful extra
+#         try:
+#             numeric_vals = [float(v) for v in vals]
+#             out['optimised_route_preference_numeric_mode'] = float(pd.Series(numeric_vals).mode().iat[0]) if len(numeric_vals) else None
+#         except Exception:
+#             out['optimised_route_preference_numeric_mode'] = None
+#     else:
+#         out['optimised_route_preference_vals'] = []
+#         out['optimised_route_preference_numeric_mode'] = None
+
+#     return out
+
+from statistics import mode, StatisticsError
+
+def aggregate_metrics(df_subset):
+    """Return mean for numeric fields and mode for categorical fields."""
+    if df_subset.empty:
+        return {}
+
+    metrics = {}
+
+    # Numeric columns (mean)
+    for col in ['Total_Cost', 'Total_Duration']:
+        if col in df_subset.columns:
             try:
-                out[col] = float(rows[col].dropna().astype(float).mean())
+                metrics[col] = round(df_subset[col].astype(float).mean(), 2)
             except Exception:
-                out[col] = None
-        else:
-            out[col] = None
+                metrics[col] = None
 
-    # optimised route preference values: collect and dedupe preserving order
-    if 'optimised_route_preference' in rows.columns:
-        vals = rows['optimised_route_preference'].dropna().tolist()
-        # convert to strings for display
-        seen = []
-        for v in vals:
-            sv = str(v)
-            if sv not in seen:
-                seen.append(sv)
-        out['optimised_route_preference_vals'] = seen
-        # if numeric, give a mode/median as helpful extra
-        try:
-            numeric_vals = [float(v) for v in vals]
-            out['optimised_route_preference_numeric_mode'] = float(pd.Series(numeric_vals).mode().iat[0]) if len(numeric_vals) else None
-        except Exception:
-            out['optimised_route_preference_numeric_mode'] = None
-    else:
-        out['optimised_route_preference_vals'] = []
-        out['optimised_route_preference_numeric_mode'] = None
+    # Categorical columns (mode)
+    for col in ['Crowd_Intensity', 'Traffic_Level', 'Festival_Impact']:
+        if col in df_subset.columns:
+            try:
+                metrics[col] = mode(df_subset[col].dropna())
+            except StatisticsError:
+                metrics[col] = None  # if multiple modes or no data
 
-    return out
+    return metrics
+
 
 # ----------------------------- App UI -------------------------------------
 
@@ -261,15 +289,22 @@ with left:
             st.warning('No sequences in the dataset match the current itinerary selection. Try different combinations or clear the itinerary.')
         else:
             # Aggregate metrics across matched rows
-            agg = aggregate_metrics_from_rows(matched_rows)
+            agg = aggregate_metrics(matched_rows)
 
             # Metric cards
+            # c1, c2, c3, c4, c5 = st.columns(5)
+            # c1.metric('Crowd (avg)', f"{agg['crowd_density']:.1f}" if agg['crowd_density'] is not None else 'N/A')
+            # c2.metric('Traffic (avg)', f"{agg['traffic_level']:.1f}" if agg['traffic_level'] is not None else 'N/A')
+            # c3.metric('Festival impact', f"{agg['festival_impact']:.1f}" if agg['festival_impact'] is not None else 'N/A')
+            # c4.metric('Avg cost', f"₹{agg['avg_cost']:.0f}" if agg['avg_cost'] is not None else 'N/A')
+            # c5.metric('Avg duration (hrs)', f"{agg['duration']:.1f}" if agg['duration'] is not None else 'N/A')
             c1, c2, c3, c4, c5 = st.columns(5)
-            c1.metric('Crowd (avg)', f"{agg['crowd_density']:.1f}" if agg['crowd_density'] is not None else 'N/A')
-            c2.metric('Traffic (avg)', f"{agg['traffic_level']:.1f}" if agg['traffic_level'] is not None else 'N/A')
-            c3.metric('Festival impact', f"{agg['festival_impact']:.1f}" if agg['festival_impact'] is not None else 'N/A')
-            c4.metric('Avg cost', f"₹{agg['avg_cost']:.0f}" if agg['avg_cost'] is not None else 'N/A')
-            c5.metric('Avg duration (hrs)', f"{agg['duration']:.1f}" if agg['duration'] is not None else 'N/A')
+            c1.metric('Crowd (mode)', metrics.get('Crowd_Intensity', 'N/A'))
+            c2.metric('Traffic (mode)', metrics.get('Traffic_Level', 'N/A'))
+            c3.metric('Festival impact (mode)', metrics.get('Festival_Impact', 'N/A'))
+            c4.metric('Avg cost', f"₹{metrics.get('Total_Cost', 'N/A')}")
+            c5.metric('Avg duration (hrs)', metrics.get('Total_Duration', 'N/A'))
+
 
             st.markdown('---')
             st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -381,3 +416,4 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
 st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
+
