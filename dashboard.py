@@ -283,13 +283,14 @@ with left:
         st.info('Start by adding destinations from the sidebar to see metrics and route suggestions.')
     else:
         # Find rows where the sequence contains the selected itinerary as a subsequence
-        matched_rows = rows_matching_itinerary(df, st.session_state.itinerary)
+        sel = rows_matching_itinerary(df, st.session_state.itinerary)
 
-        if matched_rows.empty:
-            st.warning('No sequences in the dataset match the current itinerary selection. Try different combinations or clear the itinerary.')
+
+        if not sel.empty:
+            metrics = aggregate_metrics(sel)
         else:
-            # Aggregate metrics across matched rows
-            agg = aggregate_metrics(matched_rows)
+            metrics = {}
+
 
             # Metric cards
             # c1, c2, c3, c4, c5 = st.columns(5)
@@ -416,4 +417,5 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
 st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
+
 
