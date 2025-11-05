@@ -288,31 +288,39 @@ with left:
 
         if not sel.empty:
             metrics = aggregate_metrics(sel)
-        else:
-            metrics = {}
 
-
-            # Metric cards
-            # c1, c2, c3, c4, c5 = st.columns(5)
-            # c1.metric('Crowd (avg)', f"{agg['crowd_density']:.1f}" if agg['crowd_density'] is not None else 'N/A')
-            # c2.metric('Traffic (avg)', f"{agg['traffic_level']:.1f}" if agg['traffic_level'] is not None else 'N/A')
-            # c3.metric('Festival impact', f"{agg['festival_impact']:.1f}" if agg['festival_impact'] is not None else 'N/A')
-            # c4.metric('Avg cost', f"₹{agg['avg_cost']:.0f}" if agg['avg_cost'] is not None else 'N/A')
-            # c5.metric('Avg duration (hrs)', f"{agg['duration']:.1f}" if agg['duration'] is not None else 'N/A')
+            # ---- Metric cards ----
             c1, c2, c3, c4, c5 = st.columns(5)
             c1.metric('Crowd (mode)', metrics.get('Crowd_Intensity', 'N/A'))
             c2.metric('Traffic (mode)', metrics.get('Traffic_Level', 'N/A'))
             c3.metric('Festival impact (mode)', metrics.get('Festival_Impact', 'N/A'))
             c4.metric('Avg cost', f"₹{metrics.get('Total_Cost', 'N/A')}")
             c5.metric('Avg duration (hrs)', metrics.get('Total_Duration', 'N/A'))
-
-
+        
             st.markdown('---')
             st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.write(f"**{len(matched_rows)} dataset rows match the selected itinerary.**")
+            st.write(f"**{len(sel)} dataset rows match the selected itinerary.**")
             st.write('Details (first 50 rows):')
-            st.dataframe(matched_rows.head(50).reset_index(drop=True))
+            st.dataframe(sel.head(50).reset_index(drop=True))
             st.markdown('</div>', unsafe_allow_html=True)
+
+            # ---- Route recommendation ----
+            st.subheader('Corresponding Optimised Route Preference')
+            if 'optimised_route_preference' in sel.columns:
+                vals = sel['optimised_route_preference'].dropna().unique().tolist()
+                if vals:
+                    for i, v in enumerate(vals, 1):
+                        st.write(f"{i}. {v}")
+                else:
+                    st.info("No optimised route preference data available.")
+            else:
+                st.info("No 'optimised_route_preference' column found.")
+        else:
+            st.info('No matching records found for the selected itinerary.')
+
+
+
+            
 
             # ---------------- Route Recommendation ----------------
             st.subheader('Corresponding Optimised Route Preference')
@@ -417,5 +425,6 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
 st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
+
 
 
