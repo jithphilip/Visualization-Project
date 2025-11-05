@@ -279,6 +279,7 @@ left, right = st.columns([2, 1])
 
 with left:
     st.subheader('Itinerary summary')
+    st.markdown("""<div class="itinerary-summary">""", unsafe_allow_html=True)
     if not st.session_state.itinerary:
         st.info('Start by adding destinations from the sidebar to see metrics and route suggestions.')
     else:
@@ -299,17 +300,12 @@ with left:
             c5.metric('Avg cost', f"₹{metrics.get('Total_Cost', 'N/A')}")
             c6.metric('Avg duration (hrs)', metrics.get('Total_Duration', 'N/A'))
         
-            st.markdown('---')
-            st.markdown("""<div style='font-size:0.50rem; line-height:1.0;'>""", unsafe_allow_html=True)
+            # st.markdown('---')
+            st.markdown("</div>", unsafe_allow_html=True)
             st.write(f"**{len(sel)} dataset rows match the selected itinerary.**")
             st.write('Details for selected Itenary [From Data]:')
-            st.write(f"**Average Cost:** ₹{avg_cost:.0f}")
-            st.write(f"**Average Duration:** {avg_duration:.1f} days")
-            st.write(f"**Crowd Density:** {avg_crowd_density}")
-            st.write(f"**Traffic Level:** {avg_traffic}")
-            st.write(f"**Festival Impact:** {avg_festival_impact}")
             st.dataframe(sel.head(50).reset_index(drop=True))
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("""<style>.itinerary-summary div[data-testid="stMetricValue"] { font-size:0.85rem !important; }.itinerary-summary div[data-testid="stMetricLabel"] { font-size:0.75rem !important; }</style>""", unsafe_allow_html=True)
 
             # ---- Route recommendation ----
             st.subheader('Corresponding Optimised Route Preference')
@@ -432,6 +428,7 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
 st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
+
 
 
 
