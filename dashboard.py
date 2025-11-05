@@ -489,8 +489,8 @@ def get_summary_stats(df_subset):
     """
     Returns mean for numeric columns and mode for categorical ones.
     """
-    numeric_cols = ['Total_Cost', 'Total_Duration']
-    cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather']
+    numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score']
+    cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather', 'Travel_Companions', 'Preferred_Theme', 'Preferred_Transport']
 
     summary = {}
     for col in numeric_cols:
@@ -516,8 +516,8 @@ with tab1:
 
     #df.select_dtypes(include=['number']).columns.tolist()
     #df.select_dtypes(exclude=['number']).columns.tolist()
-    numeric_cols = ['Total_Cost', 'Total_Duration']
-    cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather']
+    numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score']
+    cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather', 'Travel_Companions', 'Preferred_Theme', 'Preferred_Transport']
 
     var = st.selectbox("Select variable for analysis", df.columns)
     chart_type = st.selectbox("Select chart type", ["Histogram", "Boxplot", "Bar Chart", "Pie Chart"])
@@ -610,11 +610,14 @@ with tab3:
                 col2.metric("Traffic Level", summary.get("Traffic_Level", "N/A"))
                 col3.metric("Event Impact", summary.get("Event_Impact", "N/A"))
                 col4.metric("Weather", summary.get("Weather", "N/A"))
+                col5.metric("Travel Companions", summary.get("Travel_Companions", "N/A"))
+                col6.metric("Preferred Theme", summary.get("Preferred_Theme", "N/A"))
+                col7.metric("Preferred Transport", summary.get("Preferred_Transport", "N/A"))
                 
-                col5, col6 = st.columns(2)
-                col5.metric("Average Cost ($)", summary.get("Total_Cost", "N/A"))
-                col6.metric("Average Duration (hrs)", summary.get("Total_Duration", "N/A"))
-
+                col8, col9, col10 = st.columns(2)
+                col8.metric("Average Cost ($)", summary.get("Total_Cost", "N/A"))
+                col9.metric("Average Duration (hrs)", summary.get("Total_Duration", "N/A"))
+                col10.metric("Average Rating (1-5)", summary.get("Satisfaction_Score", "N/A"))
                 # ----------------------------------------------------------
                 # 🚗 Route Recommendation
                 # ----------------------------------------------------------
@@ -632,6 +635,7 @@ with tab3:
 
             else:
                 st.info("No matching itinerary found for the selected destinations.")
+
 
 
 
