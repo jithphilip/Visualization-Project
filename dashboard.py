@@ -110,7 +110,7 @@ def next_options(current_itin):
                 options.update(items[idx + 1:])
         return sorted(list(options))
     else:
-        return sorted(df['destination'].dropna().unique())
+        return sorted(df['sequence'].dropna().unique())
 
 # Selection UI
 cols = st.sidebar.columns([3, 1])
@@ -143,7 +143,7 @@ with left:
     if not st.session_state.itinerary:
         st.info('Start by adding destinations from the sidebar to see metrics and route suggestions.')
     else:
-        sel = df[df['destination'].isin(st.session_state.itinerary)]
+        sel = df[df['sequence'].isin(st.session_state.itinerary)]
 
         # Compute averages for summary metrics
         def safe_mean(col):
@@ -180,7 +180,7 @@ with left:
         # Instead of computing routes algorithmically, we now use the 'optimised_route_preference' column
         if 'optimised_route_preference' in df.columns:
             # Keep only rows for selected destinations
-            route_df = df[df['destination'].isin(st.session_state.itinerary)]
+            route_df = df[df['sequence'].isin(st.session_state.itinerary)]
             # Sort by the provided preference order
             route_df = route_df.sort_values('optimised_route_preference')
 
@@ -188,13 +188,13 @@ with left:
             for i, r in enumerate(route_df['destination'], 1):
                 st.write(f"{i}. {r}")
 
-            # Show map if coordinates are available
-            if {'latitude', 'longitude'}.issubset(route_df.columns):
-                map_df = route_df[['latitude', 'longitude', 'destination']]
-                map_df = map_df.rename(columns={'latitude': 'lat', 'longitude': 'lon'})
-                st.map(map_df)
-            else:
-                st.info('No coordinate data available for map view.')
+            # # Show map if coordinates are available
+            # if {'latitude', 'longitude'}.issubset(route_df.columns):
+            #     map_df = route_df[['latitude', 'longitude', 'destination']]
+            #     map_df = map_df.rename(columns={'latitude': 'lat', 'longitude': 'lon'})
+            #     st.map(map_df)
+            # else:
+            #     st.info('No coordinate data available for map view.')
         else:
             st.warning("Column 'optimised_route_preference' not found in dataset — please add it to use this feature.")
 
@@ -280,4 +280,5 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The route recommendation now strictly follows the order specified in the `optimised_route_preference` column.')
 st.markdown('Feel free to modify this section to integrate your own route logic later.')
+
 
