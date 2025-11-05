@@ -605,7 +605,7 @@ with tab3:
             if not filtered_df.empty:
                 summary = get_summary_stats(filtered_df)
 
-                col1, col2, col3, col4 = st.columns(3)
+                col1, col2, col3, col4 = st.columns(4)
                 col1.metric("Crowd Intensity", summary.get("Crowd_Density", "N/A"))
                 col2.metric("Traffic Level", summary.get("Traffic_Level", "N/A"))
                 col3.metric("Event Impact", summary.get("Event_Impact", "N/A"))
@@ -621,6 +621,7 @@ with tab3:
                     st.markdown(f"### 🚗 Recommended Route: {route_info}")
             else:
                 st.info("No matching itinerary found for the selected destinations.")
+
 
 
 
