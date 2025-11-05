@@ -291,7 +291,7 @@ with left:
 
             'Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather'
             # ---- Metric cards ----
-            c1, c2, c3, c4, c5, C6 = st.columns(6)
+            c1, c2, c3, c4, c5, c6 = st.columns(6)
             c1.metric('Crowd (Most Frequent)', metrics.get('Crowd_Density', 'N/A'))
             c2.metric('Traffic (Most Frequent)', metrics.get('Traffic_Level', 'N/A'))
             c3.metric('Festival impact (Most Frequent)', metrics.get('Event_Impact', 'N/A'))
@@ -427,6 +427,7 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
 st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
+
 
 
 
