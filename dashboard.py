@@ -514,8 +514,6 @@ with tab1:
     st.header("Univariate Analysis")
     st.write("Explore the distribution of individual variables.")
 
-    #df.select_dtypes(include=['number']).columns.tolist()
-    #df.select_dtypes(exclude=['number']).columns.tolist()
     numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score']
     cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather', 'Travel_Companions', 'Preferred_Theme', 'Preferred_Transport']
 
@@ -567,7 +565,7 @@ with tab2:
 
     chart_type = st.selectbox(
         "Select chart type",
-        ["Scatter", "Line", "Box", "Heatmap", "Grouped Bar"]
+        ["Scatter Plot", "Box Plot", "Heatmap", "Grouped Bar Chart"]
     )
 
     numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score']
@@ -748,6 +746,7 @@ with tab4:
         # # Download filtered routes
         # csv = route_df.to_csv(index=False).encode("utf-8")
         # st.download_button("⬇️ Download Matching Routes", csv, "filtered_routes.csv", "text/csv")
+
 
 
 
