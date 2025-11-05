@@ -579,15 +579,12 @@ with tab2:
                          title=f"Scatter: {x_var} vs {y_var}")
         st.plotly_chart(fig, use_container_width=True)
 
-    elif chart_type == "Line" and x_var in numeric_cols and y_var in numeric_cols:
-        fig = px.line(df, x=x_var, y=y_var, title=f"Line plot of {x_var} vs {y_var}")
-        st.plotly_chart(fig, use_container_width=True)
 
-    elif chart_type == "Box":
+    elif chart_type == "Box" and (x_var in cat_cols and y_var in numeric_cols):
         fig = px.box(df, x=x_var, y=y_var, title=f"Box plot of {y_var} grouped by {x_var}")
         st.plotly_chart(fig, use_container_width=True)
 
-    elif chart_type == "Heatmap":
+    elif chart_type == "Heatmap" and (x_var in cat_cols and y_var in cat_cols):
         try:
             pivot = pd.crosstab(df[x_var], df[y_var])
             fig = px.imshow(pivot, title=f"Heatmap: {x_var} vs {y_var}")
@@ -751,6 +748,7 @@ with tab4:
         # # Download filtered routes
         # csv = route_df.to_csv(index=False).encode("utf-8")
         # st.download_button("⬇️ Download Matching Routes", csv, "filtered_routes.csv", "text/csv")
+
 
 
 
