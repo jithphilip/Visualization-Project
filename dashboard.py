@@ -616,11 +616,12 @@ with tab3:
                 col6.metric("Average Duration (hrs)", summary.get("Total_Duration", "N/A"))
 
                 # Route recommendation
-                if "Optimised Route Preference" in df.columns:
+                if "Optimal_Route_Preference" in df.columns:
                     route_info = " → ".join(selected_dests)
                     st.markdown(f"### 🚗 Recommended Route: {route_info}")
             else:
                 st.info("No matching itinerary found for the selected destinations.")
+
 
 
 
