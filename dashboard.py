@@ -531,12 +531,20 @@ with tab1:
             fig = px.box(df, y=var, title=f"Boxplot of {var}")
             st.plotly_chart(fig, use_container_width=True)
 
+        # elif chart_type == "Bar Chart" and var in cat_cols:
+        #     fig = px.bar(df[var].value_counts().reset_index(),
+        #                  x='index', y=var,
+        #                  labels={'index': var, var: 'Count'},
+        #                  title=f"Bar chart of {var}")
+        #     st.plotly_chart(fig, use_container_width=True)
         elif chart_type == "Bar Chart" and var in cat_cols:
-            fig = px.bar(df[var].value_counts().reset_index(),
-                         x='index', y=var,
-                         labels={'index': var, var: 'Count'},
+            bar_df = df[var].value_counts().reset_index()
+            bar_df.columns = [var, "Count"]  # rename columns properly
+            fig = px.bar(bar_df, x=var, y="Count",
+                         labels={var: var, "Count": "Count"},
                          title=f"Bar chart of {var}")
             st.plotly_chart(fig, use_container_width=True)
+
 
         elif chart_type == "Pie Chart" and var in cat_cols:
             fig = px.pie(df, names=var, title=f"Pie chart of {var}")
@@ -700,6 +708,7 @@ with tab4:
         # # Download filtered routes
         # csv = route_df.to_csv(index=False).encode("utf-8")
         # st.download_button("⬇️ Download Matching Routes", csv, "filtered_routes.csv", "text/csv")
+
 
 
 
