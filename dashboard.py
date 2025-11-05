@@ -615,12 +615,24 @@ with tab3:
                 col5.metric("Average Cost ($)", summary.get("Total_Cost", "N/A"))
                 col6.metric("Average Duration (hrs)", summary.get("Total_Duration", "N/A"))
 
-                # Route recommendation
+                # ----------------------------------------------------------
+                # 🚗 Route Recommendation
+                # ----------------------------------------------------------
                 if "Optimal_Route_Preference" in df.columns:
-                    route_info = " → ".join(selected_dests)
-                    st.markdown(f"### 🚗 Recommended Route: {route_info}")
+                    route_values = filtered_df["Optimal_Route_Preference"].dropna().unique().tolist()
+                    if len(route_values) == 0:
+                        st.markdown("### 🚗 Recommended Route: Not available for the selected destinations.")
+                    else:
+                        # If multiple routes exist, pick the most frequent one (mode)
+                        try:
+                            recommended_route = mode(filtered_df["Optimal_Route_Preference"].dropna().tolist())
+                        except:
+                            recommended_route = route_values[0]  # fallback to first available
+                        st.markdown(f"### 🚗 Recommended Route: {recommended_route}")
+
             else:
                 st.info("No matching itinerary found for the selected destinations.")
+
 
 
 
