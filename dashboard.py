@@ -572,13 +572,13 @@ with tab2:
     cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather',
                 'Travel_Companions', 'Preferred_Theme', 'Preferred_Transport']
 
-    if chart_type == "Scatter" and x_var in numeric_cols and y_var in numeric_cols:
+    if chart_type == "Scatter Plot" and x_var in numeric_cols and y_var in numeric_cols:
         fig = px.scatter(df, x=x_var, y=y_var, hover_data=df.columns,
                          title=f"Scatter: {x_var} vs {y_var}")
         st.plotly_chart(fig, use_container_width=True)
 
 
-    elif chart_type == "Box" and (x_var in cat_cols and y_var in numeric_cols):
+    elif chart_type == "Box Plot" and (x_var in cat_cols and y_var in numeric_cols):
         fig = px.box(df, x=x_var, y=y_var, title=f"Box plot of {y_var} grouped by {x_var}")
         st.plotly_chart(fig, use_container_width=True)
 
@@ -590,7 +590,7 @@ with tab2:
         except Exception as e:
             st.error(f"Cannot compute heatmap for these variables: {e}")
 
-    elif chart_type == "Grouped Bar" and (x_var in cat_cols and y_var in cat_cols):
+    elif chart_type == "Grouped Bar Chart" and (x_var in cat_cols and y_var in cat_cols):
         grouped_df = df.groupby([x_var, y_var]).size().reset_index(name="Count")
         fig = px.bar(
             grouped_df,
@@ -746,6 +746,7 @@ with tab4:
         # # Download filtered routes
         # csv = route_df.to_csv(index=False).encode("utf-8")
         # st.download_button("⬇️ Download Matching Routes", csv, "filtered_routes.csv", "text/csv")
+
 
 
 
