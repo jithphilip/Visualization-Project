@@ -649,7 +649,7 @@ with tab4:
     # --- Budget filter ---
     if "Total_Cost" in route_df.columns:
         min_cost, max_cost = int(route_df["Total_Cost"].min()), int(route_df["Total_Cost"].max())
-        budget = st.slider("💰 Select your total budget range (₹)", 
+        budget = st.slider("💰 Select your total budget range ($)", 
                            min_value=min_cost, max_value=max_cost, value=(min_cost, max_cost))
         route_df = route_df[(route_df["Total_Cost"] >= budget[0]) & (route_df["Total_Cost"] <= budget[1])]
     else:
@@ -700,6 +700,7 @@ with tab4:
         # # Download filtered routes
         # csv = route_df.to_csv(index=False).encode("utf-8")
         # st.download_button("⬇️ Download Matching Routes", csv, "filtered_routes.csv", "text/csv")
+
 
 
 
