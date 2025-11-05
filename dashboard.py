@@ -12,7 +12,7 @@ st.set_page_config(page_title="Tourist Route & Insights", layout="wide")
 
 # ----------------------------- Helpers ---------------------------------
 
-def load_data(path: str = '/mnt/data/Streamlit_Data.csv') -> pd.DataFrame:
+def load_data(path: str = 'Streamlit_Data.csv') -> pd.DataFrame:
     """Loads dataset and normalises key column names for consistent access."""
     df = pd.read_csv(path)
     df.columns = [c.strip() for c in df.columns]
@@ -280,3 +280,4 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The route recommendation now strictly follows the order specified in the `optimised_route_preference` column.')
 st.markdown('Feel free to modify this section to integrate your own route logic later.')
+
