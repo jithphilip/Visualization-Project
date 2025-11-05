@@ -564,19 +564,56 @@ with tab2:
         x_var = st.selectbox("Select X variable", df.columns)
     with col2:
         y_var = st.selectbox("Select Y variable", df.columns)
+    chart_type = st.selectbox("Select chart type", ["Scatter", "Line", "Box", "Heatmap", "Grouped Bar"])
 
-    chart_type = st.selectbox("Select chart type", ["Scatter", "Line", "Box", "Bar"])
-
-    if x_var and y_var:
-        if chart_type == "Scatter":
-            fig = px.scatter(df, x=x_var, y=y_var, title=f"Scatter plot of {x_var} vs {y_var}")
-        elif chart_type == "Line":
-            fig = px.line(df, x=x_var, y=y_var, title=f"Line plot of {x_var} vs {y_var}")
-        elif chart_type == "Box":
-            fig = px.box(df, x=x_var, y=y_var, title=f"Box plot of {x_var} vs {y_var}")
-        elif chart_type == "Bar":
-            fig = px.bar(df, x=x_var, y=y_var, title=f"Bar chart of {x_var} vs {y_var}")
+    numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score']
+    cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather', 'Travel_Companions', 'Preferred_Theme', 'Preferred_Transport']
+        
+    if chart_type == "Scatter" and xvar in numeric_cols and yvar in numeric_cols:
+        fig = px.scatter(df, x=xvar, y=yvar, color=None, hover_data=df.columns, title=f"Scatter: {xvar} vs {yvar}")
         st.plotly_chart(fig, use_container_width=True)
+
+    elif chart_type == "Line" and xvar in numeric_cols and yvar in numeric_cols:
+        fig = px.line(df, x=xvar, y=yvar, title=f"Line plot of {xvar} vs {yvar}")
+        st.plotly_chart(fig, use_container_width=True)
+
+    elif chart_type == "Box":
+        fig = px.box(df, x=xvar, y=yvar, title=f"Box plot of {yvar} grouped by {xvar}")
+        st.plotly_chart(fig, use_container_width=True)
+
+    elif chart_type == "Heatmap":
+        try:
+            pivot = pd.crosstab(df[xvar], df[yvar])
+            fig = px.imshow(pivot, title=f"Heatmap: {xvar} vs {yvar}")
+            st.plotly_chart(fig, use_container_width=True)
+        except:
+            st.error("Cannot compute heatmap for these variables.")
+
+    elif chart_type == "Grouped Bar" and (xvar in cat_cols and yvar in cat_cols):
+        # count combinations of both categorical variables
+        grouped_df = df.groupby([xvar, yvar]).size().reset_index(name="Count")
+        fig = px.bar(
+            grouped_df, 
+            x=xvar, 
+            y="Count", 
+            color=yvar,
+            barmode="group",
+            title=f"Grouped Bar Chart: {xvar} vs {yvar}"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    else:
+        st.info("Select suitable variable types for the chosen plot type.")
+    # if x_var and y_var:
+    #     if chart_type == "Scatter":
+    #         fig = px.scatter(df, x=x_var, y=y_var, title=f"Scatter plot of {x_var} vs {y_var}")
+    #     elif chart_type == "Line":
+    #         fig = px.line(df, x=x_var, y=y_var, title=f"Line plot of {x_var} vs {y_var}")
+    #     elif chart_type == "Box":
+    #         fig = px.box(df, x=x_var, y=y_var, title=f"Box plot of {x_var} vs {y_var}")
+    #     elif chart_type == "Bar":
+    #         fig = px.bar(df, x=x_var, y=y_var, title=f"Bar chart of {x_var} vs {y_var}")
+    #     st.plotly_chart(fig, use_container_width=True)
 
 # ----------------------------------------------------------
 # 🔵 TAB 3: Itinerary Planner (with sidebar)
@@ -708,6 +745,7 @@ with tab4:
         # # Download filtered routes
         # csv = route_df.to_csv(index=False).encode("utf-8")
         # st.download_button("⬇️ Download Matching Routes", csv, "filtered_routes.csv", "text/csv")
+
 
 
 
