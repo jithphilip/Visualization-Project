@@ -189,7 +189,7 @@ def aggregate_metrics(df_subset):
     metrics = {}
 
     # Numeric columns (mean)
-    for col in ['Total_Cost', 'Total_Duration']:
+    for col in ['avg_cost', 'duration']:
         if col in df_subset.columns:
             try:
                 metrics[col] = round(df_subset[col].astype(float).mean(), 2)
@@ -197,7 +197,7 @@ def aggregate_metrics(df_subset):
                 metrics[col] = None
 
     # Categorical columns (mode)
-    for col in ['Crowd_Intensity', 'Traffic_Level', 'Festival_Impact']:
+    for col in ['crowd_density', 'traffic_level', 'festival_impact']:
         if col in df_subset.columns:
             try:
                 metrics[col] = mode(df_subset[col].dropna())
@@ -307,7 +307,7 @@ with left:
             # ---- Route recommendation ----
             st.subheader('Corresponding Optimised Route Preference')
             if 'optimised_route_preference' in sel.columns:
-                vals = sel['optimised_route_preference'].dropna().unique().tolist()
+                vals = sel['Optimal_Route_Preference'].dropna().unique().tolist()
                 if vals:
                     for i, v in enumerate(vals, 1):
                         st.write(f"{i}. {v}")
@@ -425,6 +425,7 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
 st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
+
 
 
 
