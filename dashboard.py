@@ -301,12 +301,11 @@ with left:
             c6.metric('Avg duration (hrs)', metrics.get('Total_Duration', 'N/A'))
         
             # st.markdown('---')
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("""<style>.itinerary-summary div[data-testid="stMetricValue"] { font-size:0.50rem !important; }.itinerary-summary div[data-testid="stMetricLabel"] { font-size:0.50rem !important; }</style>""", unsafe_allow_html=True)
             st.write(f"**{len(sel)} dataset rows match the selected itinerary.**")
             st.write('Details for selected Itenary [From Data]:')
             st.dataframe(sel.head(50).reset_index(drop=True))
-            st.markdown("""<style>.itinerary-summary div[data-testid="stMetricValue"] { font-size:0.85rem !important; }.itinerary-summary div[data-testid="stMetricLabel"] { font-size:0.75rem !important; }</style>""", unsafe_allow_html=True)
-
+            st.markdown("</div>", unsafe_allow_html=True)
             # ---- Route recommendation ----
             st.subheader('Corresponding Optimised Route Preference')
             if 'Optimal_Route_Preference' in sel.columns:
@@ -428,6 +427,7 @@ with tabs[2]:
 st.write('\n---\n')
 st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
 st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
+
 
 
 
