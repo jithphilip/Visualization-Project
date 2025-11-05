@@ -1,12 +1,14 @@
 # streamlit_dashboard.py
 # Streamlit dashboard for tourist-destination visualisation & route recommendations
-# Reads data from /mnt/data/Streamlit_Data.csv
-# Updated: Route recommendation now uses 'optimised_route_preference' column order directly
+# Reads data from Streamlit_Data.csv (expected next to this script)
+# Updated to: 1) select sequence values iteratively, 2) aggregate metrics for matching rows,
+# 3) use the 'optimised_route_preference' values from matching rows, and 4) iterative next-option narrowing
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+from collections import Counter
 
 st.set_page_config(page_title="Tourist Route & Insights", layout="wide")
 
@@ -17,7 +19,7 @@ def load_data(path: str = 'Streamlit_Data.csv') -> pd.DataFrame:
     df = pd.read_csv(path)
     df.columns = [c.strip() for c in df.columns]
 
-    # Normalize possible alternative column names
+    # Common alternate names -> canonical names
     name_mappings = {
         'Destination': 'destination',
         'Place': 'destination',
@@ -28,41 +30,154 @@ def load_data(path: str = 'Streamlit_Data.csv') -> pd.DataFrame:
         'Traffic Level': 'traffic_level',
         'Festival Impact': 'festival_impact',
         'Average Cost': 'avg_cost',
-        'Duration': 'duration'
+        'Duration': 'duration',
+        'Optimised Route Preference': 'optimised_route_preference'
     }
     df.rename(columns={k: v for k, v in name_mappings.items() if k in df.columns}, inplace=True)
     return df
 
 
 def parse_sequence_cell(cell):
-    """Converts text-based sequence entries into Python lists for easier processing."""
+    """Converts text-based sequence entries into Python lists for easier processing.
+
+    Accepts formats like:
+      - comma separated: "A, B, C"
+      - arrow separated: "A -> B -> C"
+      - Python list string: "[A, B, C]"
+      - semicolon/pipe separated
+
+    Returns a list of stripped strings.
+    """
     if pd.isna(cell):
         return []
-    s = str(cell)
+    if isinstance(cell, (list, tuple)):
+        return [str(x).strip() for x in cell]
+    s = str(cell).strip()
+    # strip surrounding brackets
     if s.startswith('[') and s.endswith(']'):
         s = s[1:-1]
-    for delim in ['->', '=>', ';', '|', ',']:
+    # Common delimiters; try arrow-style first to avoid splitting on commas inside items
+    for delim in ['->', '=>', '|', ';', ',']:
         if delim in s:
-            return [p.strip() for p in s.split(delim) if p.strip()]
+            parts = [p.strip() for p in s.split(delim) if p.strip()]
+            return parts
+    # fallback single token
     return [s]
 
 
-def build_adjacency_from_sequences(df):
-    """Constructs adjacency mapping from the 'sequence' column for iterative destination selection."""
-    adj = {}
-    all_places = set()
+def is_subsequence(small, big):
+    """Return True if list `small` is a subsequence of list `big` preserving order (not necessarily contiguous).
+    Example: [A,B] is subsequence of [X,A,Y,B,Z]."""
+    if not small:
+        return True
+    bi = 0
+    for item in big:
+        if item == small[bi]:
+            bi += 1
+            if bi == len(small):
+                return True
+    return False
+
+
+def rows_matching_itinerary(df, itinerary):
+    """Return rows from df whose parsed sequence contains the `itinerary` as a subsequence.
+
+    This is the key function: when the user builds an itinerary by selecting destinations
+    iteratively, we keep only the dataset rows (sequence values) that still match the
+    chosen itinerary in the same order. That filtered set is then used to compute
+    aggregated metrics (crowd, traffic, festival, cost, duration) and to obtain
+    the `optimised_route_preference` values corresponding to those sequences.
+    """
     if 'sequence' not in df.columns:
-        return adj, list(all_places)
+        return df.iloc[0:0]  # empty frame with same columns
 
-    for seq in df['sequence'].dropna().unique():
-        items = parse_sequence_cell(seq)
-        for i, a in enumerate(items):
-            all_places.add(a)
-            if i + 1 < len(items):
-                b = items[i + 1]
-                adj.setdefault(a, set()).add(b)
+    mask_rows = []
+    # Pre-parse sequences once for efficiency
+    parsed_sequences = df['sequence'].fillna('').apply(parse_sequence_cell)
+    for idx, seq_list in parsed_sequences.items():
+        if is_subsequence(itinerary, seq_list):
+            mask_rows.append(idx)
+    return df.loc[mask_rows]
 
-    return {k: sorted(list(v)) for k, v in adj.items()}, sorted(list(all_places))
+
+def next_options_from_matching(df, itinerary):
+    """Given the current itinerary (list of selected destinations), return the list of
+    possible next destinations by looking only at sequences that match the current itinerary.
+
+    The logic:
+      - Find all sequences (rows) where `itinerary` is a subsequence.
+      - For each such sequence, find the elements that occur **after the last selected item** in that sequence.
+      - Collect and return the sorted unique set of these next candidates.
+
+    This ensures iterative narrowing: as itinerary grows, fewer sequences will match and
+    available next options will shrink accordingly.
+    """
+    if 'sequence' not in df.columns:
+        # no sequence info, return unique destination list
+        return sorted(df['destination'].dropna().unique().tolist())
+
+    # parse sequences
+    parsed = df['sequence'].fillna('').apply(parse_sequence_cell)
+    candidates = []
+    # no selection yet: return all unique elements across sequences
+    if not itinerary:
+        all_items = set()
+        for seq_list in parsed:
+            all_items.update(seq_list)
+        return sorted([i for i in all_items if i])
+
+    last = itinerary[-1]
+    for seq_list in parsed:
+        if is_subsequence(itinerary, seq_list):
+            # find positions of last in seq_list (could be multiple); collect all following items
+            for pos, val in enumerate(seq_list):
+                if val == last:
+                    # add all items after this position
+                    candidates.extend(seq_list[pos + 1 :])
+    # unique, preserve sorted order
+    return sorted(list(dict.fromkeys([c for c in candidates if c])))
+
+
+def aggregate_metrics_from_rows(rows):
+    """Given a DataFrame `rows` (matching sequences), compute the aggregated metrics required by the UI.
+
+    Returns a dict with keys: crowd_density, traffic_level, festival_impact, avg_cost, duration, optimised_route_preference_vals
+    - Numeric fields are averaged (mean) when multiple rows exist.
+    - optimised_route_preference_vals: returns unique list of values from matching rows (preserves order of appearance).
+    - If a field doesn't exist, value will be None.
+    """
+    out = {}
+    numeric_cols = ['crowd_density', 'traffic_level', 'festival_impact', 'avg_cost', 'duration']
+    for col in numeric_cols:
+        if col in rows.columns:
+            try:
+                out[col] = float(rows[col].dropna().astype(float).mean())
+            except Exception:
+                out[col] = None
+        else:
+            out[col] = None
+
+    # optimised route preference values: collect and dedupe preserving order
+    if 'optimised_route_preference' in rows.columns:
+        vals = rows['optimised_route_preference'].dropna().tolist()
+        # convert to strings for display
+        seen = []
+        for v in vals:
+            sv = str(v)
+            if sv not in seen:
+                seen.append(sv)
+        out['optimised_route_preference_vals'] = seen
+        # if numeric, give a mode/median as helpful extra
+        try:
+            numeric_vals = [float(v) for v in vals]
+            out['optimised_route_preference_numeric_mode'] = float(pd.Series(numeric_vals).mode().iat[0]) if len(numeric_vals) else None
+        except Exception:
+            out['optimised_route_preference_numeric_mode'] = None
+    else:
+        out['optimised_route_preference_vals'] = []
+        out['optimised_route_preference_numeric_mode'] = None
+
+    return out
 
 # ----------------------------- App UI -------------------------------------
 
@@ -86,42 +201,39 @@ with st.spinner('Loading data...'):
 if st.sidebar.checkbox('Show raw data', value=False):
     st.dataframe(df)
 
-# Build adjacency for iterative selection
-adj, seq_places = build_adjacency_from_sequences(df)
+# Build adjacency (not strictly necessary now since we derive next options from matching rows),
+# but keep it for backwards compatibility or future use.
+# (This function is used to compute next options in an alternative way.)
+adj, seq_places = (None, [])
+if 'sequence' in df.columns:
+    # build simple adjacency (neighbors) for quick reference
+    all_places = set()
+    adj_temp = {}
+    for seq in df['sequence'].dropna().unique():
+        parsed = parse_sequence_cell(seq)
+        for i, a in enumerate(parsed):
+            all_places.add(a)
+            if i + 1 < len(parsed):
+                b = parsed[i + 1]
+                adj_temp.setdefault(a, set()).add(b)
+    adj = {k: sorted(list(v)) for k, v in adj_temp.items()}
+    seq_places = sorted(list(all_places))
 
 # ---------------- Sidebar for itinerary selection ----------------
 st.sidebar.header('Build an itinerary (iterative)')
 if 'itinerary' not in st.session_state:
     st.session_state.itinerary = []
 
-# Determine next available destinations based on sequence adjacency
-def next_options(current_itin):
-    if adj:
-        if not current_itin:
-            return seq_places
-        last = current_itin[-1]
-        if last in adj and adj[last]:
-            return adj[last]
-        options = set()
-        for seq in df['sequence'].dropna().unique():
-            items = parse_sequence_cell(seq)
-            if last in items:
-                idx = items.index(last)
-                options.update(items[idx + 1:])
-        return sorted(list(options))
-    else:
-        return sorted(df['sequence'].dropna().unique())
-
-# Selection UI
+# Selection UI: show next options based on currently matching sequences
 cols = st.sidebar.columns([3, 1])
-next_opts = next_options(st.session_state.itinerary)
+next_opts = next_options_from_matching(df, st.session_state.itinerary)
 if next_opts:
     choice = cols[0].selectbox('Choose next destination', ['-- none --'] + next_opts)
     if cols[1].button('Add') and choice != '-- none --':
         st.session_state.itinerary.append(choice)
         st.experimental_rerun()
 else:
-    st.sidebar.info('No next destinations available — try clearing itinerary.')
+    st.sidebar.info('No next destinations available — try clearing itinerary or check your sequence data.')
 
 if st.sidebar.button('Clear itinerary'):
     st.session_state.itinerary = []
@@ -135,7 +247,6 @@ else:
     st.sidebar.write('_No selections yet_')
 
 # ---------------- Main display area ----------------
-
 left, right = st.columns([2, 1])
 
 with left:
@@ -143,60 +254,41 @@ with left:
     if not st.session_state.itinerary:
         st.info('Start by adding destinations from the sidebar to see metrics and route suggestions.')
     else:
-        sel = df[df['sequence'].isin(st.session_state.itinerary)]
+        # Find rows where the sequence contains the selected itinerary as a subsequence
+        matched_rows = rows_matching_itinerary(df, st.session_state.itinerary)
 
-        # Compute averages for summary metrics
-        def safe_mean(col):
-            if col in sel.columns:
-                try:
-                    return sel[col].dropna().astype(float).mean()
-                except:
-                    return None
-            return None
-
-        crowd = safe_mean('crowd_density')
-        traffic = safe_mean('traffic_level')
-        fest = safe_mean('festival_impact')
-        avg_cost = safe_mean('avg_cost')
-        avg_duration = safe_mean('duration')
-
-        # Metric cards
-        c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric('Crowd (avg)', f"{crowd:.1f}" if crowd else 'N/A')
-        c2.metric('Traffic (avg)', f"{traffic:.1f}" if traffic else 'N/A')
-        c3.metric('Festival impact', f"{fest:.1f}" if fest else 'N/A')
-        c4.metric('Avg cost', f"₹{avg_cost:.0f}" if avg_cost else 'N/A')
-        c5.metric('Avg duration (hrs)', f"{avg_duration:.1f}" if avg_duration else 'N/A')
-
-        st.markdown('---')
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.write('**Details for each selected destination**')
-        st.dataframe(sel.reset_index(drop=True))
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # ---------------- Route Recommendation ----------------
-        st.subheader('Recommended Route (based on dataset preference)')
-
-        # Instead of computing routes algorithmically, we now use the 'optimised_route_preference' column
-        if 'optimised_route_preference' in df.columns:
-            # Keep only rows for selected destinations
-            route_df = df[df['sequence'].isin(st.session_state.itinerary)]
-            # Sort by the provided preference order
-            route_df = route_df.sort_values('optimised_route_preference')
-
-            # Display the order
-            for i, r in enumerate(route_df['destination'], 1):
-                st.write(f"{i}. {r}")
-
-            # # Show map if coordinates are available
-            # if {'latitude', 'longitude'}.issubset(route_df.columns):
-            #     map_df = route_df[['latitude', 'longitude', 'destination']]
-            #     map_df = map_df.rename(columns={'latitude': 'lat', 'longitude': 'lon'})
-            #     st.map(map_df)
-            # else:
-            #     st.info('No coordinate data available for map view.')
+        if matched_rows.empty:
+            st.warning('No sequences in the dataset match the current itinerary selection. Try different combinations or clear the itinerary.')
         else:
-            st.warning("Column 'optimised_route_preference' not found in dataset — please add it to use this feature.")
+            # Aggregate metrics across matched rows
+            agg = aggregate_metrics_from_rows(matched_rows)
+
+            # Metric cards
+            c1, c2, c3, c4, c5 = st.columns(5)
+            c1.metric('Crowd (avg)', f"{agg['crowd_density']:.1f}" if agg['crowd_density'] is not None else 'N/A')
+            c2.metric('Traffic (avg)', f"{agg['traffic_level']:.1f}" if agg['traffic_level'] is not None else 'N/A')
+            c3.metric('Festival impact', f"{agg['festival_impact']:.1f}" if agg['festival_impact'] is not None else 'N/A')
+            c4.metric('Avg cost', f"₹{agg['avg_cost']:.0f}" if agg['avg_cost'] is not None else 'N/A')
+            c5.metric('Avg duration (hrs)', f"{agg['duration']:.1f}" if agg['duration'] is not None else 'N/A')
+
+            st.markdown('---')
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.write(f"**{len(matched_rows)} dataset rows match the selected itinerary.**")
+            st.write('Details (first 50 rows):')
+            st.dataframe(matched_rows.head(50).reset_index(drop=True))
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # ---------------- Route Recommendation ----------------
+            st.subheader('Corresponding Optimised Route Preference')
+            orp_vals = agg.get('optimised_route_preference_vals', [])
+            if orp_vals:
+                st.write('Values from matching rows (preserving dataset order):')
+                for i, v in enumerate(orp_vals, 1):
+                    st.write(f"{i}. {v}")
+                if agg.get('optimised_route_preference_numeric_mode') is not None:
+                    st.write(f"Numeric mode of optimised_route_preference: {agg['optimised_route_preference_numeric_mode']}")
+            else:
+                st.info("No 'optimised_route_preference' values found in the matching dataset rows.")
 
 # ---------------- Right panel for filtering ----------------
 with right:
@@ -205,17 +297,26 @@ with right:
 
     # Range sliders for numeric filters
     if 'crowd_density' in df.columns:
-        minc, maxc = float(df['crowd_density'].min()), float(df['crowd_density'].max())
-        crowd_range = st.slider('Crowd density range', min_value=minc, max_value=maxc, value=(minc, maxc))
-        filtered = filtered[(filtered['crowd_density'] >= crowd_range[0]) & (filtered['crowd_density'] <= crowd_range[1])]
+        try:
+            minc, maxc = float(df['crowd_density'].min()), float(df['crowd_density'].max())
+            crowd_range = st.slider('Crowd density range', min_value=minc, max_value=maxc, value=(minc, maxc))
+            filtered = filtered[(filtered['crowd_density'] >= crowd_range[0]) & (filtered['crowd_density'] <= crowd_range[1])]
+        except Exception:
+            pass
 
     if 'traffic_level' in df.columns:
-        mint, maxt = float(df['traffic_level'].min()), float(df['traffic_level'].max())
-        traffic_range = st.slider('Traffic level range', min_value=mint, max_value=maxt, value=(mint, maxt))
-        filtered = filtered[(filtered['traffic_level'] >= traffic_range[0]) & (filtered['traffic_level'] <= traffic_range[1])]
+        try:
+            mint, maxt = float(df['traffic_level'].min()), float(df['traffic_level'].max())
+            traffic_range = st.slider('Traffic level range', min_value=mint, max_value=maxt, value=(mint, maxt))
+            filtered = filtered[(filtered['traffic_level'] >= traffic_range[0]) & (filtered['traffic_level'] <= traffic_range[1])]
+        except Exception:
+            pass
 
     st.write(f'*{len(filtered)} destinations match filters*')
-    st.dataframe(filtered[['destination']].drop_duplicates().reset_index(drop=True).head(10))
+    if 'destination' in filtered.columns:
+        st.dataframe(filtered[['destination']].drop_duplicates().reset_index(drop=True).head(10))
+    else:
+        st.dataframe(filtered.head(10))
 
 # ---------------- Visualisation Tabs ----------------
 st.write('---')
@@ -278,7 +379,5 @@ with tabs[2]:
 
 # Footer note
 st.write('\n---\n')
-st.markdown('**Note:** The route recommendation now strictly follows the order specified in the `optimised_route_preference` column.')
-st.markdown('Feel free to modify this section to integrate your own route logic later.')
-
-
+st.markdown('**Note:** The selection of next destinations is derived from sequences that still match the current itinerary; metrics are aggregated over those matching dataset rows.')
+st.markdown('Modify `rows_matching_itinerary` and `next_options_from_matching` functions to change the matching rules or aggregation behavior.')
