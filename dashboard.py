@@ -612,8 +612,8 @@ with tab3:
                 col4.metric("Weather", summary.get("Weather", "N/A"))
                 
                 col5, col6 = st.columns(2)
-                col5.metric("Average Cost (hrs)", summary.get("Total_Cost", "N/A"))
-                col6.metric("Average Duration (₹)", summary.get("Total_Duration", "N/A"))
+                col5.metric("Average Cost ($)", summary.get("Total_Cost", "N/A"))
+                col6.metric("Average Duration (hrs)", summary.get("Total_Duration", "N/A"))
 
                 # Route recommendation
                 if "Optimised Route Preference" in df.columns:
@@ -621,6 +621,7 @@ with tab3:
                     st.markdown(f"### 🚗 Recommended Route: {route_info}")
             else:
                 st.info("No matching itinerary found for the selected destinations.")
+
 
 
 
