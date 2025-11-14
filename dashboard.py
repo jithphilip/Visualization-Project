@@ -505,12 +505,102 @@ def get_summary_stats(df_subset):
 # ----------------------------------------------------------
 # 📊 Tabs for analysis and itinerary planning
 # ----------------------------------------------------------
-tab1, tab2, tab3, tab4 = st.tabs(["Univariate Analysis", "Bivariate Analysis", "Itinerary Planner", "Route Finder"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Data Summary","Univariate Analysis", "Bivariate Analysis", "Itinerary Planner", "Route Finder"])
+
+
+with tab1:
+    st.markdown("""
+    ### 📝 Project Summary
+
+    This dashboard provides an exploratory analysis and interactive exploration of a dynamic tourism route dataset. 
+    The goal is to support travellers and tourism planners in making informed decisions by analysing how route characteristics, 
+    contextual factors, and user preferences influence overall travel satisfaction and route optimization.
+
+    ---
+
+    ## 📘 Dataset Overview
+
+    The dataset consists of **1,345 travel routes** across **50 tourist destinations**, each representing a unique travel experience. 
+    It contains **18 variables**, grouped into four major components:
+
+    ### **1. Route Information**
+    Describes the structural aspects of each travel route:
+    - **Route ID** – Unique identifier for each route  
+    - **Sequence** – Ordered list of destinations visited  
+    - **Total Duration** – Time required to complete the route (minutes)  
+    - **Total Cost** – Total expenditure for the route  
+
+    ### **2. Dynamic Context Variables**
+    Environmental and situational factors affecting travel experience:
+    - **Weather** – Sunny, Rainy, Cloudy, Snowy  
+    - **Traffic Level** – Low, Medium, High  
+    - **Crowd Density** – Low, Medium, High  
+    - **Event Impact** – Festival, Holiday, None  
+
+    ### **3. User Information & Feedback**
+    Captures demographic details and satisfaction:
+    - **User ID**, **Age**, **Gender**, **Nationality**  
+    - **Travel Companions** – Solo, Family, Friends, Group  
+    - **Budget Category** – Low, Medium, High  
+    - **Preferred Theme** – Adventure, Cultural, Shopping, etc.  
+    - **Preferred Transport** – Car, Bus, Train, Taxi, Walk, Bike  
+    - **Satisfaction Score** – Rating on a scale of 1–5  
+
+    ### **4. System-Generated Recommendation**
+    - **Optimal Route Preference** – A suggested reordered itinerary to maximize satisfaction while minimizing cost and duration  
+
+    ---
+
+    ## 📊 Dashboard Functionalities
+
+    ### **1. Univariate Analysis**
+    Visualizes individual variables using:
+    - Bar charts
+    - Histograms
+    - Pie charts  
+    Helps understand distributions, frequency patterns, and dominant categories.
+
+    ### **2. Bivariate Analysis**
+    Explores relationships between two variables:
+    - **Categorical vs Categorical** → clustered bar charts  
+    - **Categorical vs Numerical** → boxplots  
+    - **Numerical vs Numerical** → scatter plots  
+    Useful for identifying correlations—e.g.,  
+    traffic vs satisfaction, weather vs duration, budget vs cost.
+
+    ### **3. Route Search Utility**
+    Allows users to:
+    - Select a set of destinations  
+    - Retrieve matching routes  
+    Helps travellers filter routes based on their interests and available attractions.
+
+    ### **4. Route Recommendation Module**
+    Uses the **Optimal Route Preference** column to:
+    - Suggest a reordered or improved route  
+    - Compare chosen destinations with recommended order  
+    Supports more efficient and experience-optimized travel planning.
+
+    # ---
+
+    ## Relevance to Traveller Problems
+
+    These features collectively address common travel challenges such as:
+    - Choosing routes that balance **time, cost, and satisfaction**
+    - Understanding how **weather, traffic, and crowd levels** impact travel  
+    - Identifying routes suited to specific **budget levels and travel preferences**  
+    - Making informed decisions through **visual insights**  
+    - Receiving **data-driven route recommendations** to improve trip planning  
+
+    This dashboard thus serves as a practical tool for analysing real-world travel patterns 
+    and enhancing route decisions using data-driven insights.
+    """)
+
+
 
 # ----------------------------------------------------------
-# 🟢 TAB 1: Univariate analysis
+# 🟢 TAB 2: Univariate analysis
 # ----------------------------------------------------------
-with tab1:
+with tab2:
     st.header("Univariate Analysis")
     st.write("Explore the distribution of individual variables.")
 
@@ -551,9 +641,9 @@ with tab1:
             st.warning("Selected chart type is not suitable for this variable type.")
 
 # ----------------------------------------------------------
-# 🟡 TAB 2: Bivariate analysis
+# 🟡 TAB 3: Bivariate analysis
 # ----------------------------------------------------------
-with tab2:
+with tab3:
     st.header("Bivariate Analysis")
     st.write("Visualize relationships between two variables.")
 
@@ -617,9 +707,9 @@ with tab2:
     #     st.plotly_chart(fig, use_container_width=True)
 
 # ----------------------------------------------------------
-# 🔵 TAB 3: Itinerary Planner (with sidebar)
+# 🔵 TAB 4: Itinerary Planner (with sidebar)
 # ----------------------------------------------------------
-with tab3:
+with tab4:
     st.header("Itinerary Planner")
 
     st.sidebar.header("Build an itinerary (iterative)")
@@ -684,9 +774,9 @@ with tab3:
 
 
 # ----------------------------------------------------------
-# Tab 4:🧭 Route Finder Tab
+# Tab 5:🧭 Route Finder Tab
 # ----------------------------------------------------------
-with tab4:
+with tab5:
     st.header("🧭 Find Routes Based on Your Preferences")
 
     # Create a working copy of df
@@ -746,6 +836,7 @@ with tab4:
         # # Download filtered routes
         # csv = route_df.to_csv(index=False).encode("utf-8")
         # st.download_button("⬇️ Download Matching Routes", csv, "filtered_routes.csv", "text/csv")
+
 
 
 
