@@ -273,7 +273,7 @@ with tab3:
 with tab4:
     st.header("Itinerary Planner")
 
-    st.sidebar.header("Build an itinerary (iterative)")
+    st.sidebar.header("Build an itinerary [Select your options one by one]")
 
     # Iterative destination selection
     selected_dests = []
@@ -393,6 +393,7 @@ with tab5:
         avg_cost = route_df["Total_Cost"].mean() if "Total_Cost" in route_df.columns else None
         if avg_cost:
             st.metric("Average Cost of Matching Routes", f"₹{avg_cost:.0f}")
+
 
 
 
