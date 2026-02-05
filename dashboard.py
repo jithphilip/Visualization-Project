@@ -176,7 +176,7 @@ with tab2:
     st.header("Univariate Analysis")
     st.write("Explore the distribution of individual variables.")
 
-    numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score']
+    numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score','Age']
     cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather', 'Travel_Companions', 'Preferred_Theme', 'Preferred_Transport']
 
     var = st.selectbox("Select variable for analysis", df.columns)
@@ -230,7 +230,7 @@ with tab3:
         ["Scatter Plot", "Box Plot", "Heatmap", "Grouped Bar Chart"]
     )
 
-    numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score']
+    numeric_cols = ['Total_Cost', 'Total_Duration', 'Satisfaction_Score', 'Age']
     cat_cols = ['Crowd_Density', 'Traffic_Level', 'Event_Impact', 'Weather',
                 'Travel_Companions', 'Preferred_Theme', 'Preferred_Transport']
 
@@ -393,6 +393,7 @@ with tab5:
         avg_cost = route_df["Total_Cost"].mean() if "Total_Cost" in route_df.columns else None
         if avg_cost:
             st.metric("Average Cost of Matching Routes", f"₹{avg_cost:.0f}")
+
 
 
 
